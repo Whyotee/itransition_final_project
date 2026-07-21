@@ -16,7 +16,8 @@ model User {
   avatarUrl String? 
   createdAt DateTime @default(now())
 
-  profileValues ProfileValue[] 
+  profileValues ProfileValue[]
+  positions     Position[] 
 }
 
 enum AttributeType {
@@ -26,11 +27,20 @@ enum AttributeType {
   BOOLEAN
 }
 
+enum AttributeCategory {
+  CERTIFICATION
+  DOMAIN_KNOWLEDGE
+  PERSONAL_INFORMATION
+  SOFT_SKILLS
+}
+
 model Attribute {
-  id        Int           @id @default(autoincrement())
-  name      String
-  type      AttributeType @default(TEXT)
-  createdAt DateTime      @default(now())
+  id        Int               @id @default(autoincrement())
+  name      String            @unique 
+  type      AttributeType     @default(TEXT)
+  category  AttributeCategory @default(PERSONAL_INFORMATION)
+  isBuiltIn Boolean           @default(false) 
+  createdAt DateTime          @default(now())
 
   profileValues ProfileValue[]
 }
@@ -42,7 +52,16 @@ model ProfileValue {
   value       String
 
   user      User      @relation(fields: [userId], references: [id])
-  attribute Attribute @relation(fields: [attributeId], references: [id])
+  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade) // deleting an attribute removes its saved values
 
-  @@unique([userId, attributeId]) 
+  @@unique([userId, attributeId])
+}
+
+model Position {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  createdById Int
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
 }

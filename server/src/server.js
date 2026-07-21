@@ -3,8 +3,9 @@ import express from "express";
 import session from "express-session";
 import { config } from "./config.js";
 import { authRouter } from "./auth.js";
-import { attributesRouter } from "./attributes.js";
+import { attributesRouter, ensureBuiltInAttributes } from "./attributes.js";
 import { profileRouter } from "./profile.js";
+import { positionsRouter } from "./positions.js";
 
 const app = express();
 
@@ -33,6 +34,11 @@ app.use("/api/auth", authRouter);
 app.use("/api/attributes", attributesRouter);
 
 app.use("/api/profile", profileRouter);
+
+app.use("/api/positions", positionsRouter);
+
+
+ensureBuiltInAttributes().catch((err) => console.error("Failed to seed built-in attributes:", err));
 
 app.listen(config.port, () => {
   console.log(`Server running on http://localhost:${config.port}`);

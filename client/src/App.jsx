@@ -3,6 +3,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import HomePage from "./pages/HomePage.jsx";
 import AttributesPage from "./pages/AttributesPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import PositionsPage from "./pages/PositionsPage.jsx";
 
 export default function App() {
   const [user, setUser] = useState(null); 
@@ -27,12 +28,14 @@ export default function App() {
         <Link to="/">Home</Link>
         <Link to="/attributes">Attributes</Link>
         <Link to="/profile">Profile</Link>
+        <Link to="/positions">Positions</Link>
       </nav>
       
       <Routes>
         <Route path="/" element={<HomePage user={user} onLogout={logout} />} />
         <Route path="/attributes" element={<AttributesPage user={user} />} />
         <Route path="/profile" element={<ProfilePage user={user} />} />
+        <Route path="/positions" element={<PositionsPage user={user} />} />
       </Routes>
     </div>
   );
