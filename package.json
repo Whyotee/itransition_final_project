@@ -1,0 +1,8 @@
+{
+  "name": "cv-platform",
+  "private": true,
+  "scripts": {
+    "build": "npm install --prefix client --include=dev && npm run build --prefix client && npm install --prefix server --include=dev && npm run db:generate --prefix server",
+    "start": "npm run db:migrate --prefix server && npm start --prefix server"
+  }
+}
