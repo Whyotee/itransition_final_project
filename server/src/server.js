@@ -17,7 +17,9 @@ const clientDistPath = path.join(__dirname, "../../client/dist");
 
 const app = express();
 
-app.use(express.json()); 
+app.set("trust proxy", 1);
+
+app.use(express.json());
 
 app.use(express.static(clientDistPath));
 
