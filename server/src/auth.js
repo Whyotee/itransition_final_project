@@ -16,6 +16,20 @@ const GOOGLE_PROFILE = "https://www.googleapis.com/oauth2/v3/userinfo";
 const callbackUrl = `${config.appUrl}/api/auth/github/callback`;
 const googleCallbackUrl = `${config.appUrl}/api/auth/google/callback`;
 
+function isAdminEmail(email) {
+  return Boolean(email) && config.adminEmails.includes(email.toLowerCase());
+}
+
+async function fetchGithubEmail(accessToken) {
+  const res = await fetch("https://api.github.com/user/emails", {
+    headers: { Authorization: `Bearer ${accessToken}`, "User-Agent": "cv-platform" },
+  });
+  const emails = await res.json();
+  if (!Array.isArray(emails)) return null;
+  const primary = emails.find((e) => e.primary && e.verified) ?? emails[0];
+  return primary?.email ?? null;
+}
+
 authRouter.get("/github", (req, res) => {
   const state = crypto.randomBytes(16).toString("hex"); 
   req.session.oauthState = state; 
@@ -23,7 +37,7 @@ authRouter.get("/github", (req, res) => {
   const url = new URL(GITHUB_AUTHORIZE);
   url.searchParams.set("client_id", config.github.clientId);
   url.searchParams.set("redirect_uri", callbackUrl);
-  url.searchParams.set("scope", "read:user user:email"); // what we ask permission to read
+  url.searchParams.set("scope", "read:user user:email"); 
   url.searchParams.set("state", state);
   res.redirect(url.toString());
 });
@@ -52,14 +66,25 @@ authRouter.get("/github/callback", async (req, res) => {
   });
   const profile = await profileRes.json();
 
+  const email = profile.email ?? (await fetchGithubEmail(access_token));
+  
+  const updateData = {
+    name: profile.name ?? profile.login,
+    avatarUrl: profile.avatar_url,
+  };
+  if (isAdminEmail(email)) {
+    updateData.role = "ADMIN";
+  }
+
   const user = await prisma.user.upsert({
     where: { githubId: String(profile.id) },
-    update: { name: profile.name ?? profile.login, avatarUrl: profile.avatar_url },
+    update: updateData,
     create: {
       githubId: String(profile.id),
-      name: profile.name ?? profile.login, 
-      email: profile.email, 
+      name: profile.name ?? profile.login,
+      email,
       avatarUrl: profile.avatar_url,
+      role: isAdminEmail(email) ? "ADMIN" : "CANDIDATE",
     },
   });
 
@@ -108,14 +133,23 @@ authRouter.get("/google/callback", async (req, res) => {
   });
   const profile = await profileRes.json(); 
 
+  const updateData = {
+    name: profile.name,
+    avatarUrl: profile.picture,
+  };
+  if (isAdminEmail(profile.email)) {
+    updateData.role = "ADMIN";
+  }
+
   const user = await prisma.user.upsert({
     where: { googleId: profile.sub },
-    update: { name: profile.name, avatarUrl: profile.picture },
+    update: updateData,
     create: {
       googleId: profile.sub,
       name: profile.name,
       email: profile.email,
       avatarUrl: profile.picture,
+      role: isAdminEmail(profile.email) ? "ADMIN" : "CANDIDATE",
     },
   });
 

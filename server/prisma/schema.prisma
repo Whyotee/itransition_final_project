@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  CANDIDATE
+  RECRUITER
+  ADMIN
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   githubId  String?  @unique 
@@ -14,10 +20,12 @@ model User {
   email     String? 
   name      String
   avatarUrl String? 
+  role      Role     @default(CANDIDATE)
   createdAt DateTime @default(now())
 
   profileValues ProfileValue[]
   positions     Position[] 
+  cvs           Cv[] 
 }
 
 enum AttributeType {
@@ -52,7 +60,7 @@ model ProfileValue {
   value       String
 
   user      User      @relation(fields: [userId], references: [id])
-  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade) // deleting an attribute removes its saved values
+  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade) 
 
   @@unique([userId, attributeId])
 }
@@ -64,4 +72,19 @@ model Position {
   createdById Int
   createdBy   User     @relation(fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
+
+  cvs Cv[] 
+}
+
+
+model Cv {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  positionId Int
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, positionId]) 
 }

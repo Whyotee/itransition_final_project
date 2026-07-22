@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "./lib/prisma.js";
-import { requireAuth } from "./middleware.js";
+import { requireRecruiterOrAdmin } from "./middleware.js";
 
 export const attributesRouter = Router();
 
@@ -36,21 +36,20 @@ attributesRouter.get("/", async (req, res) => {
   res.json(attributes);
 });
 
-attributesRouter.post("/", requireAuth, async (req, res) => {
+attributesRouter.post("/", requireRecruiterOrAdmin, async (req, res) => {
   const { name, type, category } = readAttributeInput(req.body);
   if (!name) return res.status(400).json({ error: "Name is required." });
 
   try {
     const attribute = await prisma.attribute.create({ data: { name, type, category } });
     res.json(attribute);
-  } catch (err) {
-    // P2002 = unique constraint failed (a name that already exists).
+  } catch (err) {   
     if (err.code === "P2002") return res.status(409).json({ error: "That name is already taken." });
     throw err;
   }
 });
 
-attributesRouter.put("/:id", requireAuth, async (req, res) => {
+attributesRouter.put("/:id", requireRecruiterOrAdmin, async (req, res) => {
   const { name, type, category } = readAttributeInput(req.body);
   if (!name) return res.status(400).json({ error: "Name is required." });
 
@@ -71,7 +70,7 @@ attributesRouter.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
-attributesRouter.delete("/:id", requireAuth, async (req, res) => {
+attributesRouter.delete("/:id", requireRecruiterOrAdmin, async (req, res) => {
   const attribute = await prisma.attribute.findUnique({ where: { id: Number(req.params.id) } });
   if (attribute?.isBuiltIn) {
     return res.status(403).json({ error: "Built-in attributes cannot be deleted." });

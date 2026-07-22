@@ -8,6 +8,11 @@ export const config = {
   
   appUrl: process.env.APP_URL || "http://localhost:5173",
 
+  adminEmails: (process.env.ADMIN_EMAILS || "")
+    .toLowerCase()
+    .split(",")
+    .map((email) => email.trim()),
+
   github: {
     clientId: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,

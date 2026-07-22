@@ -6,6 +6,8 @@ import { authRouter } from "./auth.js";
 import { attributesRouter, ensureBuiltInAttributes } from "./attributes.js";
 import { profileRouter } from "./profile.js";
 import { positionsRouter } from "./positions.js";
+import { usersRouter } from "./users.js";
+import { cvsRouter } from "./cv.js";
 
 const app = express();
 
@@ -36,6 +38,10 @@ app.use("/api/attributes", attributesRouter);
 app.use("/api/profile", profileRouter);
 
 app.use("/api/positions", positionsRouter);
+
+app.use("/api/users", usersRouter);
+
+app.use("/api/cvs", cvsRouter);
 
 
 ensureBuiltInAttributes().catch((err) => console.error("Failed to seed built-in attributes:", err));

@@ -1,7 +1,7 @@
 export default function HomePage({ user, onLogout }) {
   return (
     <div>
-      <h1>CV Platform</h1>
+      <h1>CV City</h1>
 
       {user ? (
         <div className="d-flex align-items-center gap-2 mt-3">
@@ -9,7 +9,8 @@ export default function HomePage({ user, onLogout }) {
             <img src={user.avatarUrl} alt="" width="40" height="40" className="rounded-circle" />
           )}
           <span>
-            Signed in as <strong>{user.name}</strong>
+            Signed in as <strong>{user.name}</strong>{" "}
+            <span className="badge bg-primary">{user.role}</span>
           </span>
           <button className="btn btn-outline-secondary btn-sm" onClick={onLogout}>
             Log out

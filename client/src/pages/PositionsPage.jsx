@@ -8,7 +8,7 @@ export default function PositionsPage({ user }) {
   function load() {
     fetch("/api/positions")
       .then((res) => res.json())
-      .then(setPositions);
+      .then((data) =>setPositions(data));
   }
 
   useEffect(load, []);
@@ -30,7 +30,7 @@ export default function PositionsPage({ user }) {
     <div>
       <h1>Positions</h1>
 
-      {user ? (
+      {user && (user.role === "RECRUITER" || user.role === "ADMIN") ? (
         <form onSubmit={addPosition} className="my-3" style={{ maxWidth: 480 }}>
           <input
             className="form-control mb-2"
@@ -51,7 +51,7 @@ export default function PositionsPage({ user }) {
           </button>
         </form>
       ) : (
-        <p className="text-muted my-3">Log in (Home tab) to create positions.</p>
+        <p className="text-muted my-3">Only recruiters can create positions.</p>
       )}
 
       <ul className="list-group">

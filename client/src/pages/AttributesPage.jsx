@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { canManage } from "../roles.js";
 
 const TYPES = ["TEXT", "NUMBER", "DATE", "BOOLEAN"];
 const TYPE_LABELS = { TEXT: "Text", NUMBER: "Number", DATE: "Date", BOOLEAN: "Yes/No" };
@@ -17,13 +18,17 @@ export default function AttributesPage({ user }) {
   const [type, setType] = useState("TEXT");
   const [category, setCategory] = useState("PERSONAL_INFORMATION");
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState([]); 
-  const [editingId, setEditingId] = useState(null); 
+  const [selected, setSelected] = useState([]);
+
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("TEXT");
+  const [editCategory, setEditCategory] = useState("PERSONAL_INFORMATION");
 
   function load() {
     fetch("/api/attributes")
       .then((res) => res.json())
-      .then(setAttributes);
+      .then((data) => setAttributes(data));
   }
 
   useEffect(load, []);
@@ -36,8 +41,9 @@ export default function AttributesPage({ user }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, type, category }),
     }).then(async (res) => {
+      const data = await res.json();
       if (!res.ok) {
-        setError((await res.json()).error);
+        setError(data.error);
         return;
       }
       setName("");
@@ -48,22 +54,55 @@ export default function AttributesPage({ user }) {
   }
 
   function toggle(id) {
-    setSelected((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+    if (selected.includes(id)) {
+      setSelected(selected.filter((x) => x !== id));
+    } else {
+      setSelected([...selected, id]);
+    }
   }
 
-  function deleteSelected() {
+  async function deleteSelected() {
     if (!window.confirm(`Delete ${selected.length} attribute(s)? Saved values will also be removed.`)) return;
-    Promise.all(selected.map((id) => fetch(`/api/attributes/${id}`, { method: "DELETE" }))).then(() => {
+    for (const id of selected) {
+      await fetch(`/api/attributes/${id}`, { method: "DELETE" });
+    }
+    setSelected([]);
+    load();
+  }
+
+  function startEdit() {
+    const attr = attributes.find((a) => a.id === selected[0]);
+    setEditingId(attr.id);
+    setEditName(attr.name);
+    setEditType(attr.type);
+    setEditCategory(attr.category);
+  }
+
+  function saveEdit() {
+    fetch(`/api/attributes/${editingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editName, type: editType, category: editCategory }),
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+      setEditingId(null);
       setSelected([]);
+      setError("");
       load();
     });
   }
+
+  const manage = canManage(user);
 
   return (
     <div>
       <h1>Attributes</h1>
 
-      {user ? (
+      {manage ? (
         <form onSubmit={addAttribute} className="row g-2 my-3">
           <div className="col-auto">
             <input
@@ -104,13 +143,12 @@ export default function AttributesPage({ user }) {
 
       {error && <div className="alert alert-danger py-2">{error}</div>}
 
-      
-      {user && (
+      {manage && (
         <div className="d-flex gap-2 align-items-center mb-2">
           <button
             className="btn btn-sm btn-outline-secondary"
             disabled={selected.length !== 1}
-            onClick={() => setEditingId(selected[0])}
+            onClick={startEdit}
           >
             Edit
           </button>
@@ -125,25 +163,60 @@ export default function AttributesPage({ user }) {
       )}
 
       <ul className="list-group">
-        {attributes.map((a) =>
-          editingId === a.id ? (
-            <AttributeEditRow
-              key={a.id}
-              attr={a}
-              onDone={() => {
-                setEditingId(null);
-                setSelected([]);
-                setError("");
-                load();
-              }}
-              onError={setError}
-            />
-          ) : (
-            <li
-              key={a.id}
-              className="list-group-item d-flex align-items-center gap-2"
-            >
-              {user && !a.isBuiltIn && (
+        {attributes.map((a) => {
+          if (editingId === a.id) {
+            return (
+              <li key={a.id} className="list-group-item">
+                <div className="row g-2">
+                  <div className="col-auto">
+                    <input
+                      className="form-control"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-auto">
+                    <select
+                      className="form-select"
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value)}
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c} value={c}>
+                          {CATEGORY_LABELS[c]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-auto">
+                    <select
+                      className="form-select"
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                    >
+                      {TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {TYPE_LABELS[t]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-auto d-flex gap-2">
+                    <button className="btn btn-sm btn-primary" onClick={saveEdit}>
+                      Save
+                    </button>
+                    <button className="btn btn-sm btn-outline-secondary" onClick={() => setEditingId(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </li>
+            );
+          }
+
+          return (
+            <li key={a.id} className="list-group-item d-flex align-items-center gap-2">
+              {manage && !a.isBuiltIn && (
                 <input
                   type="checkbox"
                   className="form-check-input mt-0"
@@ -157,66 +230,9 @@ export default function AttributesPage({ user }) {
                 {a.isBuiltIn && <span className="badge bg-dark">Built-in</span>}
               </span>
             </li>
-          )
-        )}
+          );
+        })}
       </ul>
     </div>
-  );
-}
-
-
-function AttributeEditRow({ attr, onDone, onError }) {
-  const [name, setName] = useState(attr.name);
-  const [type, setType] = useState(attr.type);
-  const [category, setCategory] = useState(attr.category);
-
-  function save() {
-    fetch(`/api/attributes/${attr.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type, category }),
-    }).then(async (res) => {
-      if (!res.ok) {
-        onError((await res.json()).error);
-        return;
-      }
-      onDone();
-    });
-  }
-
-  return (
-    <li className="list-group-item">
-      <div className="row g-2">
-        <div className="col-auto">
-          <input className="form-control" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="col-auto">
-          <select className="form-select" value={category} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_LABELS[c]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-auto">
-          <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
-            {TYPES.map((t) => (
-              <option key={t} value={t}>
-                {TYPE_LABELS[t]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="col-auto d-flex gap-2">
-          <button className="btn btn-sm btn-primary" onClick={save}>
-            Save
-          </button>
-          <button className="btn btn-sm btn-outline-secondary" onClick={onDone}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </li>
   );
 }

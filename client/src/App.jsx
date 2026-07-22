@@ -4,6 +4,9 @@ import HomePage from "./pages/HomePage.jsx";
 import AttributesPage from "./pages/AttributesPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import PositionsPage from "./pages/PositionsPage.jsx";
+import CvsPage from "./pages/CvsPage.jsx";
+import CvViewPage from "./pages/CvViewPage.jsx";
+import AdminUsersPage from "./pages/AdminUsersPage.jsx";
 
 export default function App() {
   const [user, setUser] = useState(null); 
@@ -29,6 +32,8 @@ export default function App() {
         <Link to="/attributes">Attributes</Link>
         <Link to="/profile">Profile</Link>
         <Link to="/positions">Positions</Link>
+        <Link to="/cvs">CVs</Link>
+        {user && user.role === "ADMIN" && <Link to="/admin/users">Users</Link>}
       </nav>
       
       <Routes>
@@ -36,6 +41,9 @@ export default function App() {
         <Route path="/attributes" element={<AttributesPage user={user} />} />
         <Route path="/profile" element={<ProfilePage user={user} />} />
         <Route path="/positions" element={<PositionsPage user={user} />} />
+        <Route path="/cvs" element={<CvsPage user={user} />} />
+        <Route path="/cvs/:id" element={<CvViewPage />} />
+        <Route path="/admin/users" element={<AdminUsersPage user={user} />} />
       </Routes>
     </div>
   );
