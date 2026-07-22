@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 export const config = {
-  isProd: process.env.NODE_ENV === "production",
+  cookiesShouldBeSecure: process.env.NODE_ENV === "production",
   port: process.env.PORT || 4000,
   sessionSecret: process.env.SESSION_SECRET || "dev-secret",
 

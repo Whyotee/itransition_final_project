@@ -1,4 +1,6 @@
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import session from "express-session";
 import { config } from "./config.js";
@@ -9,9 +11,15 @@ import { positionsRouter } from "./positions.js";
 import { usersRouter } from "./users.js";
 import { cvsRouter } from "./cv.js";
 
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDistPath = path.join(__dirname, "../../client/dist");
+
 const app = express();
 
 app.use(express.json()); 
+
+app.use(express.static(clientDistPath));
 
 app.use(
   session({
@@ -21,7 +29,7 @@ app.use(
     cookie: {
       httpOnly: true, 
       sameSite: "lax",
-      secure: config.isProd, 
+      secure: config.cookiesShouldBeSecure, 
     },
   })
 );
@@ -43,6 +51,13 @@ app.use("/api/users", usersRouter);
 
 app.use("/api/cvs", cvsRouter);
 
+app.use((req, res, next) => {
+  if (req.method === "GET" && !req.path.startsWith("/api")) {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  } else {
+    next();
+  }
+});
 
 ensureBuiltInAttributes().catch((err) => console.error("Failed to seed built-in attributes:", err));
 
